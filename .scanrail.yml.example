@@ -1,0 +1,27 @@
+# Scanrail Configuration
+# Copy this file to .scanrail.yml in your project root
+
+# AI Provider Configuration
+ai:
+  provider: claude  # Options: claude, ollama (future)
+  api_key: null     # Leave null to use ANTHROPIC_API_KEY env var
+
+# Scanner Configuration
+scanners:
+  gitleaks:
+    enabled: true
+  semgrep:
+    enabled: true
+    config: auto  # Options: auto, or path to custom ruleset
+
+# Ignored Paths
+ignore:
+  - "**/node_modules/**"
+  - "**/vendor/**"
+  - "**/.git/**"
+  - "**/dist/**"
+  - "**/build/**"
+
+# Severity Thresholds
+severity:
+  fail_on: ["critical", "high"]  # Exit with error code if findings at these levels exist
