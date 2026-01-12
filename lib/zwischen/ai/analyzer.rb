@@ -3,7 +3,7 @@
 require_relative "claude_client"
 require_relative "../finding/finding"
 
-module Scanrail
+module Zwischen
   module AI
     class Analyzer
       def initialize(api_key: nil, project_context: {})
@@ -88,7 +88,7 @@ module Scanrail
           )
 
           # Create new finding with enhanced data
-          Scanrail::Finding::Finding.new(
+          Zwischen::Finding::Finding.new(
             type: finding.type,
             scanner: finding.scanner,
             severity: finding.severity,

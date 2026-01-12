@@ -3,15 +3,15 @@
 require "thor"
 require "json"
 require "colorize"
-require_relative "scanrail"
+require_relative "zwischen"
 
-module Scanrail
+module Zwischen
   class CLI < Thor
-    desc "init", "Initialize Scanrail configuration"
+    desc "init", "Initialize Zwischen configuration"
     def init
       if Config.init
         puts "\n✅ Configuration initialized!"
-        puts "Edit .scanrail.yml to customize settings."
+        puts "Edit .zwischen.yml to customize settings."
       end
     end
 
@@ -19,7 +19,7 @@ module Scanrail
     def doctor
       installer = Installer.new
       puts "\n" + "=" * 60
-      puts "Scanrail Doctor - Tool Status".colorize(:bold)
+      puts "Zwischen Doctor - Tool Status".colorize(:bold)
       puts "=" * 60 + "\n"
 
       tools = {

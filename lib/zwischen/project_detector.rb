@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Scanrail
+module Zwischen
   class ProjectDetector
     DETECTION_PATTERNS = {
       "node" => ["package.json"],

@@ -4,7 +4,7 @@ require_relative "base"
 require "json"
 require_relative "../finding/finding"
 
-module Scanrail
+module Zwischen
   module Scanner
     class Gitleaks < Base
       def initialize
@@ -28,7 +28,7 @@ module Scanrail
 
         # Gitleaks returns an array of findings
         Array(json_data).each do |finding|
-          findings << Scanrail::Finding::Finding.new(
+          findings << Zwischen::Finding::Finding.new(
             type: "secret",
             scanner: "gitleaks",
             severity: map_severity(finding["RuleID"]),

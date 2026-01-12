@@ -3,7 +3,7 @@
 require "faraday"
 require "json"
 
-module Scanrail
+module Zwischen
   module AI
     class Error < StandardError; end
 
@@ -53,7 +53,7 @@ module Scanrail
       def resolve_api_key(provided_key)
         return provided_key if provided_key && !provided_key.empty?
 
-        ENV["ANTHROPIC_API_KEY"] || ENV["GUARDRAIL_API_KEY"]
+        ENV["ANTHROPIC_API_KEY"] || ENV["ZWISCHEN_API_KEY"]
       end
     end
   end

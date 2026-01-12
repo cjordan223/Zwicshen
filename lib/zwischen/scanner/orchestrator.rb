@@ -3,7 +3,7 @@
 require_relative "gitleaks"
 require_relative "semgrep"
 
-module Scanrail
+module Zwischen
   module Scanner
     class Orchestrator
       def initialize(config:)
@@ -16,7 +16,7 @@ module Scanrail
         available_scanners = enabled_scanners.select(&:available?)
 
         if available_scanners.empty?
-          warn "No scanners available. Run 'scanrail doctor' to check installation."
+          warn "No scanners available. Run 'zwischen doctor' to check installation."
           return []
         end
 

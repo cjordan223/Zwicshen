@@ -1,24 +1,52 @@
-# Scanrail
+# Zwischen
 
 AI-augmented security scanning CLI for vibe coders. Orchestrates Gitleaks and Semgrep scanners, aggregates findings, and uses AI to prioritize and explain security issues.
 
 ## Installation
 
+### From RubyGems (when published)
+
 ```bash
-gem install scanrail
+gem install zwischen
+```
+
+### Local Development
+
+For local development and testing:
+
+```bash
+# Clone the repository
+git clone https://github.com/zwischen/zwischen.git
+cd zwischen
+
+# Install dependencies
+bundle install
+
+# Build and install the gem locally
+gem build zwischen.gemspec
+gem install ./zwischen-*.gem
+
+# Or use bundler to run directly without installing
+bundle exec bin/zwischen --help
+
+# Run tests
+bundle exec rspec
+
+# Run a specific test file
+bundle exec rspec spec/zwischen/project_detector_spec.rb
 ```
 
 ## Quick Start
 
 ```bash
 # Check if required tools are installed
-scanrail doctor
+zwischen doctor
 
 # Initialize configuration
-scanrail init
+zwischen init
 
 # Scan your project
-scanrail scan --ai claude
+zwischen scan --ai claude
 ```
 
 ## Features
@@ -36,7 +64,7 @@ scanrail scan --ai claude
 
 Install missing tools with:
 ```bash
-scanrail doctor
+zwischen doctor
 ```
 
 ## Configuration
@@ -48,20 +76,20 @@ export ANTHROPIC_API_KEY=your_key_here
 
 Or use the `--api-key` flag:
 ```bash
-scanrail scan --ai claude --api-key your_key_here
+zwischen scan --ai claude --api-key your_key_here
 ```
 
 ## Usage
 
 ```bash
 # Scan with AI analysis
-scanrail scan --ai claude
+zwischen scan --ai claude
 
 # Scan specific scanner types only
-scanrail scan --only secrets,sast
+zwischen scan --only secrets,sast
 
 # Output as JSON
-scanrail scan --format json
+zwischen scan --format json
 ```
 
 ## License

@@ -4,9 +4,9 @@ require "spec_helper"
 require "tmpdir"
 require "fileutils"
 
-RSpec.describe Scanrail::ProjectDetector do
+RSpec.describe Zwischen::ProjectDetector do
   let(:temp_dir) { Dir.mktmpdir }
-  let(:detector) { Scanrail::ProjectDetector.new(temp_dir) }
+  let(:detector) { Zwischen::ProjectDetector.new(temp_dir) }
 
   after do
     FileUtils.rm_rf(temp_dir)

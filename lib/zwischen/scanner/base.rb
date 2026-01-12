@@ -2,7 +2,7 @@
 
 require "open3"
 
-module Scanrail
+module Zwischen
   module Scanner
     class Base
       attr_reader :name, :command

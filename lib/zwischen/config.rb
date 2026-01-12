@@ -3,7 +3,7 @@
 require "yaml"
 require "fileutils"
 
-module Scanrail
+module Zwischen
   class Config
     DEFAULT_CONFIG = {
       "ai" => {
@@ -26,7 +26,7 @@ module Scanrail
       }
     }.freeze
 
-    CONFIG_FILE = ".scanrail.yml"
+    CONFIG_FILE = ".zwischen.yml"
 
     def self.load(project_root = Dir.pwd)
       config_path = File.join(project_root, CONFIG_FILE)
@@ -42,7 +42,7 @@ module Scanrail
 
     def self.init(project_root = Dir.pwd)
       config_path = File.join(project_root, CONFIG_FILE)
-      example_path = File.join(File.dirname(__dir__), "..", ".scanrail.yml.example")
+      example_path = File.join(File.dirname(__dir__), "..", ".zwischen.yml.example")
 
       if File.exist?(config_path)
         puts "Configuration file already exists at #{config_path}"

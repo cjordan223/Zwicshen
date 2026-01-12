@@ -2,10 +2,10 @@
 
 require "spec_helper"
 
-RSpec.describe Scanrail::Finding::Finding do
+RSpec.describe Zwischen::Finding::Finding do
   describe "#initialize" do
     it "creates a finding with all attributes" do
-      finding = Scanrail::Finding::Finding.new(
+      finding = Zwischen::Finding::Finding.new(
         type: "secret",
         scanner: "gitleaks",
         severity: "high",
@@ -25,7 +25,7 @@ RSpec.describe Scanrail::Finding::Finding do
     end
 
     it "normalizes severity levels" do
-      finding = Scanrail::Finding::Finding.new(
+      finding = Zwischen::Finding::Finding.new(
         type: "sast",
         scanner: "semgrep",
         severity: "ERROR",
@@ -37,7 +37,7 @@ RSpec.describe Scanrail::Finding::Finding do
     end
 
     it "identifies critical findings" do
-      finding = Scanrail::Finding::Finding.new(
+      finding = Zwischen::Finding::Finding.new(
         type: "secret",
         scanner: "gitleaks",
         severity: "critical",
@@ -52,7 +52,7 @@ RSpec.describe Scanrail::Finding::Finding do
 
   describe "#to_h" do
     it "converts finding to hash" do
-      finding = Scanrail::Finding::Finding.new(
+      finding = Zwischen::Finding::Finding.new(
         type: "secret",
         scanner: "gitleaks",
         severity: "high",

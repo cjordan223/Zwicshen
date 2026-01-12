@@ -3,7 +3,7 @@
 require "open3"
 require "rbconfig"
 
-module Scanrail
+module Zwischen
   class Installer
     PLATFORMS = {
       darwin: "macos",

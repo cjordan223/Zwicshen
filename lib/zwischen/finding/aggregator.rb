@@ -2,7 +2,7 @@
 
 require_relative "finding"
 
-module Scanrail
+module Zwischen
   module Finding
     class Aggregator
       SEVERITY_ORDER = { "critical" => 0, "high" => 1, "medium" => 2, "low" => 3, "info" => 4 }.freeze

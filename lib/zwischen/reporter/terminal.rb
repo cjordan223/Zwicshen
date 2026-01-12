@@ -3,7 +3,7 @@
 require "colorize"
 require_relative "../finding/finding"
 
-module Scanrail
+module Zwischen
   module Reporter
     class Terminal
       SEVERITY_COLORS = {
@@ -42,7 +42,7 @@ module Scanrail
       def print_summary
         summary = @results[:summary]
         puts "\n" + "=" * 60
-        puts "Scanrail Security Scan Results".colorize(:bold)
+        puts "Zwischen Security Scan Results".colorize(:bold)
         puts "=" * 60
         puts "\nTotal Findings: #{summary[:total]}".colorize(:bold)
 

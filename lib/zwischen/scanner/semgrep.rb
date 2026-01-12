@@ -4,7 +4,7 @@ require_relative "base"
 require "json"
 require_relative "../finding/finding"
 
-module Scanrail
+module Zwischen
   module Scanner
     class Semgrep < Base
       def initialize(config: "auto")
@@ -26,7 +26,7 @@ module Scanrail
         Array(json_data["results"]).each do |result|
           severity = map_severity(result["extra"]&.dig("severity"))
           
-          findings << Scanrail::Finding::Finding.new(
+          findings << Zwischen::Finding::Finding.new(
             type: "sast",
             scanner: "semgrep",
             severity: severity,

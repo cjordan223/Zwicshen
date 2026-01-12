@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Scanrail
+module Zwischen
   module Finding
     class Finding
       attr_reader :type, :scanner, :severity, :file, :line, :message, :rule_id, :code_snippet, :raw_data

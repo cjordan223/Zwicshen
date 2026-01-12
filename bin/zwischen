@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative "../lib/scanrail"
+require_relative "../lib/zwischen"
 
 if __FILE__ == $PROGRAM_NAME
-  Scanrail::CLI.start(ARGV)
+  Zwischen::CLI.start(ARGV)
 end

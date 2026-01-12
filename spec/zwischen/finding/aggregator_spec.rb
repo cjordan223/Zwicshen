@@ -2,9 +2,9 @@
 
 require "spec_helper"
 
-RSpec.describe Scanrail::Finding::Aggregator do
+RSpec.describe Zwischen::Finding::Aggregator do
   let(:finding1) do
-    Scanrail::Finding::Finding.new(
+    Zwischen::Finding::Finding.new(
       type: "secret",
       scanner: "gitleaks",
       severity: "critical",
@@ -16,7 +16,7 @@ RSpec.describe Scanrail::Finding::Aggregator do
   end
 
   let(:finding2) do
-    Scanrail::Finding::Finding.new(
+    Zwischen::Finding::Finding.new(
       type: "sast",
       scanner: "semgrep",
       severity: "high",
@@ -29,7 +29,7 @@ RSpec.describe Scanrail::Finding::Aggregator do
 
   describe ".aggregate" do
     it "aggregates findings" do
-      result = Scanrail::Finding::Aggregator.aggregate([finding1, finding2])
+      result = Zwischen::Finding::Aggregator.aggregate([finding1, finding2])
 
       expect(result[:findings].length).to eq(2)
       expect(result[:summary][:total]).to eq(2)
@@ -38,7 +38,7 @@ RSpec.describe Scanrail::Finding::Aggregator do
     end
 
     it "deduplicates findings" do
-      duplicate = Scanrail::Finding::Finding.new(
+      duplicate = Zwischen::Finding::Finding.new(
         type: "secret",
         scanner: "gitleaks",
         severity: "critical",
@@ -48,17 +48,17 @@ RSpec.describe Scanrail::Finding::Aggregator do
         rule_id: "rule1"
       )
 
-      result = Scanrail::Finding::Aggregator.aggregate([finding1, duplicate])
+      result = Zwischen::Finding::Aggregator.aggregate([finding1, duplicate])
       expect(result[:findings].length).to eq(1)
     end
 
     it "sorts by severity" do
-      result = Scanrail::Finding::Aggregator.aggregate([finding2, finding1])
+      result = Zwischen::Finding::Aggregator.aggregate([finding2, finding1])
       expect(result[:findings].first.severity).to eq("critical")
     end
 
     it "groups by file" do
-      result = Scanrail::Finding::Aggregator.aggregate([finding1, finding2])
+      result = Zwischen::Finding::Aggregator.aggregate([finding1, finding2])
       expect(result[:grouped]["test.rb"].length).to eq(2)
     end
   end
