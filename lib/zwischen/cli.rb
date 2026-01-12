@@ -3,7 +3,6 @@
 require "thor"
 require "json"
 require "colorize"
-require_relative "zwischen"
 
 module Zwischen
   class CLI < Thor

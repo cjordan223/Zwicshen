@@ -19,6 +19,13 @@ For local development and testing:
 git clone https://github.com/zwischen/zwischen.git
 cd zwischen
 
+# Install system dependencies (required for native gem compilation)
+# On Ubuntu/Debian:
+sudo apt-get install ruby3.3-dev build-essential
+
+# Install bundler if not already installed
+gem install bundler
+
 # Install dependencies
 bundle install
 
@@ -35,6 +42,12 @@ bundle exec rspec
 # Run a specific test file
 bundle exec rspec spec/zwischen/project_detector_spec.rb
 ```
+
+**Note:** If `bundle` command is not found, add the gem bin directory to your PATH:
+```bash
+export PATH="$HOME/.local/share/gem/ruby/3.3.0/bin:$PATH"
+```
+Add this line to your `~/.bashrc` or `~/.zshrc` to make it permanent.
 
 ## Quick Start
 
