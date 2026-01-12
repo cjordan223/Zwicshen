@@ -26,9 +26,14 @@ module Zwischen
         new(aggregated_results, ai_enabled: ai_enabled).report
       end
 
-      def initialize(aggregated_results, ai_enabled: false)
+      def self.report_compact(aggregated_results, config:, ai_enabled: false)
+        new(aggregated_results, ai_enabled: ai_enabled, config: config).report_compact
+      end
+
+      def initialize(aggregated_results, ai_enabled: false, config: nil)
         @results = aggregated_results
         @ai_enabled = ai_enabled
+        @config = config
       end
 
       def report
@@ -110,11 +115,64 @@ module Zwischen
         puts ""
       end
 
+      def report_compact
+        blocking_severity = @config&.blocking_severity || "high"
+        findings = @results[:findings]
+        
+        # Filter to only blocking findings
+        blocking_findings = findings.select { |f| should_block?(f, blocking_severity) }
+
+        # If no blocking findings, exit silently (exit code 0)
+        return 0 if blocking_findings.empty?
+
+        # Show compact output for blocking findings
+        puts "🛡️  Zwischen: #{blocking_findings.length} issue#{blocking_findings.length == 1 ? '' : 's'} found\n\n"
+
+        blocking_findings.each do |finding|
+          severity_color = SEVERITY_COLORS[finding.severity] || :white
+          severity_label = finding.severity.upcase
+
+          puts "  #{severity_label}".colorize(severity_color) + "  #{finding.file}:#{finding.line || '?'}"
+          puts "            #{finding.message}"
+
+          # Show fix suggestion if available
+          if @ai_enabled && finding.raw_data["ai_fix_suggestion"]
+            puts "            → #{finding.raw_data['ai_fix_suggestion']}"
+          end
+
+          puts ""
+        end
+
+        puts "Push blocked. Fix issues above or:"
+        puts "  • Run 'zwischen scan' for full report"
+        puts "  • Run 'git push --no-verify' to skip (not recommended)"
+
+        1 # Exit code 1 = push blocked
+      end
+
+      def should_block?(finding, blocking_severity)
+        return false if @ai_enabled && finding.raw_data["ai_false_positive"]
+
+        case blocking_severity
+        when "critical"
+          finding.critical?
+        when "high"
+          finding.critical? || finding.high?
+        when "none"
+          false
+        else
+          # Default: block on high or critical
+          finding.critical? || finding.high?
+        end
+      end
+
       def exit_code
         findings = @results[:findings]
-        critical_or_high = findings.any? { |f| f.should_fail? && !(@ai_enabled && f.raw_data["ai_false_positive"]) }
+        blocking_severity = @config&.blocking_severity || "high"
+        
+        blocking = findings.any? { |f| should_block?(f, blocking_severity) }
 
-        critical_or_high ? 1 : 0
+        blocking ? 1 : 0
       end
     end
   end

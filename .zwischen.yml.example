@@ -1,27 +1,31 @@
-# Scanrail Configuration
-# Copy this file to .scanrail.yml in your project root
+# Zwischen Configuration
+# Copy this file to .zwischen.yml in your project root
 
 # AI Provider Configuration
 ai:
-  provider: claude  # Options: claude, ollama (future)
-  api_key: null     # Leave null to use ANTHROPIC_API_KEY env var
+  enabled: true
+  provider: claude  # uses key from ~/.zwischen/credentials
+  # api_key: null   # Leave null to use ~/.zwischen/credentials or ANTHROPIC_API_KEY env var
+
+# What blocks a push
+blocking:
+  severity: high  # block on high or critical (default)
+  # severity: critical  # only block on critical
+  # severity: none  # never block, just warn
 
 # Scanner Configuration
 scanners:
-  gitleaks:
-    enabled: true
-  semgrep:
-    enabled: true
-    config: auto  # Options: auto, or path to custom ruleset
+  gitleaks: true
+  semgrep: true
+  # Or use detailed format:
+  # gitleaks:
+  #   enabled: true
+  # semgrep:
+  #   enabled: true
+  #   config: auto  # Options: auto, or path to custom ruleset
 
 # Ignored Paths
 ignore:
-  - "**/node_modules/**"
-  - "**/vendor/**"
-  - "**/.git/**"
-  - "**/dist/**"
-  - "**/build/**"
-
-# Severity Thresholds
-severity:
-  fail_on: ["critical", "high"]  # Exit with error code if findings at these levels exist
+  - vendor/
+  - node_modules/
+  - "*.test.js"

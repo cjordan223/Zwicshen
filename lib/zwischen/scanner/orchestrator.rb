@@ -11,12 +11,12 @@ module Zwischen
         @scanners = build_scanners
       end
 
-      def scan(project_root = Dir.pwd, only: nil)
+      def scan(project_root = Dir.pwd, only: nil, pre_push: false)
         enabled_scanners = select_scanners(only)
         available_scanners = enabled_scanners.select(&:available?)
 
         if available_scanners.empty?
-          warn "No scanners available. Run 'zwischen doctor' to check installation."
+          warn "No scanners available. Run 'zwischen doctor' to check installation." unless pre_push
           return []
         end
 
@@ -34,6 +34,7 @@ module Zwischen
         end
 
         # Flatten all findings
+        # Note: In pre-push mode, we still scan entire repo, filtering happens in CLI layer
         results.values.flatten
       end
 

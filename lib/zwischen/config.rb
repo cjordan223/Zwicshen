@@ -7,8 +7,12 @@ module Zwischen
   class Config
     DEFAULT_CONFIG = {
       "ai" => {
+        "enabled" => true,
         "provider" => "claude",
         "api_key" => nil
+      },
+      "blocking" => {
+        "severity" => "high"  # high, critical, or none
       },
       "scanners" => {
         "gitleaks" => { "enabled" => true },
@@ -68,8 +72,27 @@ module Zwischen
       @config.dig("ai", "provider") || "claude"
     end
 
+    def ai_enabled?
+      # Default to true if provider is set, otherwise check explicit enabled flag
+      provider = ai_provider
+      enabled = @config.dig("ai", "enabled")
+      enabled.nil? ? !provider.nil? : enabled
+    end
+
     def ai_api_key
+      # Check credentials first, then config
+      begin
+        require_relative "credentials"
+        api_key = Credentials.get_api_key
+        return api_key if api_key
+      rescue LoadError, NameError
+        # Credentials not available, fall through to config
+      end
       @config.dig("ai", "api_key")
+    end
+
+    def blocking_severity
+      @config.dig("blocking", "severity") || "high"
     end
 
     def scanner_enabled?(scanner)

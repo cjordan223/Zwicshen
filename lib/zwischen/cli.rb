@@ -8,10 +8,8 @@ module Zwischen
   class CLI < Thor
     desc "init", "Initialize Zwischen configuration"
     def init
-      if Config.init
-        puts "\n✅ Configuration initialized!"
-        puts "Edit .zwischen.yml to customize settings."
-      end
+      require_relative "setup"
+      Setup.run
     end
 
     desc "doctor", "Check if required tools are installed"
@@ -57,18 +55,32 @@ module Zwischen
     method_option :ai, type: :string, desc: "Enable AI analysis (claude)"
     method_option :"api-key", type: :string, desc: "API key for AI provider"
     method_option :format, type: :string, default: "terminal", desc: "Output format (terminal, json)"
+    method_option :"pre-push", type: :boolean, desc: "Pre-push mode (quiet, compact output)"
     def scan
+      require_relative "git_diff"
+      require_relative "credentials"
+      
       config = Config.load
       project = ProjectDetector.detect
+      pre_push = options[:"pre-push"]
 
-      puts "🔍 Scanning #{project[:primary_type] || 'project'}...\n"
+      # Suppress scanning message in pre-push mode (will show only if issues found)
+      unless pre_push
+        puts "🔍 Scanning #{project[:primary_type] || 'project'}...\n"
+      end
 
       # Run scanners
       orchestrator = Scanner::Orchestrator.new(config: config)
-      findings = orchestrator.scan(project[:root], only: options[:only])
+      findings = orchestrator.scan(project[:root], only: options[:only], pre_push: pre_push)
+
+      # Filter findings to changed files in pre-push mode
+      if pre_push
+        changed_files = GitDiff.changed_files
+        findings = GitDiff.filter_findings(findings: findings, changed_files: changed_files)
+      end
 
       if findings.empty?
-        puts "\n✅ No security findings detected!".colorize(:green)
+        # In pre-push mode, exit silently (no output)
         exit 0
       end
 
@@ -76,19 +88,29 @@ module Zwischen
       aggregated = Finding::Aggregator.aggregate(findings)
 
       # AI analysis if enabled
-      ai_enabled = !options[:ai].nil? && !options[:ai].empty?
+      ai_enabled = if pre_push
+        # In pre-push mode, use config to determine AI
+        config.ai_enabled? && Credentials.get_api_key
+      else
+        # Manual scan: use flag or config
+        (!options[:ai].nil? && !options[:ai].empty?) || (config.ai_enabled? && Credentials.get_api_key)
+      end
+
       if ai_enabled
         begin
-          puts "🤖 Analyzing findings with AI...\n"
+          unless pre_push
+            puts "🤖 Analyzing findings with AI...\n"
+          end
+          api_key = options[:"api-key"] || Credentials.get_api_key
           analyzer = AI::Analyzer.new(
-            api_key: options[:"api-key"],
+            api_key: api_key,
             project_context: project
           )
           enhanced_findings = analyzer.analyze(aggregated[:findings])
           aggregated = Finding::Aggregator.aggregate(enhanced_findings)
         rescue AI::Error => e
-          warn "⚠️  AI analysis unavailable: #{e.message}"
-          warn "Continuing with non-AI results..."
+          warn "⚠️  AI analysis unavailable: #{e.message}" unless pre_push
+          # In pre-push mode, continue silently without AI
         end
       end
 
@@ -99,15 +121,45 @@ module Zwischen
           summary: aggregated[:summary],
           findings: aggregated[:findings].map(&:to_h)
         })
-        exit aggregated[:findings].any? { |f| f.should_fail? && !(ai_enabled && f.raw_data["ai_false_positive"]) } ? 1 : 0
+        blocking_severity = config.blocking_severity
+        exit_code = aggregated[:findings].any? { |f| should_block?(f, blocking_severity, ai_enabled) } ? 1 : 0
+        exit exit_code
       else
-        exit_code = Reporter::Terminal.report(aggregated, ai_enabled: ai_enabled)
+        if pre_push
+          exit_code = Reporter::Terminal.report_compact(aggregated, config: config, ai_enabled: ai_enabled)
+        else
+          exit_code = Reporter::Terminal.report(aggregated, ai_enabled: ai_enabled)
+        end
         exit exit_code
       end
     rescue StandardError => e
       puts "❌ Error: #{e.message}".colorize(:red)
       puts e.backtrace if ENV["DEBUG"]
       exit 1
+    end
+
+    private
+
+    def should_block?(finding, blocking_severity, ai_enabled)
+      return false if ai_enabled && finding.raw_data["ai_false_positive"]
+
+      case blocking_severity
+      when "critical"
+        finding.critical?
+      when "high"
+        finding.critical? || finding.high?
+      when "none"
+        false
+      else
+        # Default: block on high or critical
+        finding.critical? || finding.high?
+      end
+    end
+
+    desc "uninstall", "Remove Zwischen git hook and optionally config"
+    def uninstall
+      require_relative "setup"
+      Setup.uninstall
     end
 
     default_task :scan
