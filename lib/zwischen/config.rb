@@ -8,6 +8,7 @@ module Zwischen
     DEFAULT_CONFIG = {
       "ai" => {
         "enabled" => true,
+        "pre_push_enabled" => false,
         "provider" => "claude",
         "api_key" => nil
       },
@@ -23,7 +24,8 @@ module Zwischen
         "**/vendor/**",
         "**/.git/**",
         "**/dist/**",
-        "**/build/**"
+        "**/build/**",
+        "**/test/fixtures/**"
       ],
       "severity" => {
         "fail_on" => ["critical", "high"]
@@ -44,21 +46,21 @@ module Zwischen
       new(config)
     end
 
-    def self.init(project_root = Dir.pwd)
+    def self.init(project_root = Dir.pwd, quiet: false)
       config_path = File.join(project_root, CONFIG_FILE)
       example_path = File.join(File.dirname(__dir__), "..", ".zwischen.yml.example")
 
       if File.exist?(config_path)
-        puts "Configuration file already exists at #{config_path}"
+        puts "Configuration file already exists at #{config_path}" unless quiet
         return false
       end
 
       if File.exist?(example_path)
         FileUtils.cp(example_path, config_path)
-        puts "Created #{config_path} from example"
+        puts "Created #{config_path} from example" unless quiet
       else
         File.write(config_path, DEFAULT_CONFIG.to_yaml)
-        puts "Created #{config_path} with default configuration"
+        puts "Created #{config_path} with default configuration" unless quiet
       end
 
       true
@@ -79,6 +81,10 @@ module Zwischen
       enabled.nil? ? !provider.nil? : enabled
     end
 
+    def ai_pre_push_enabled?
+      @config.dig("ai", "pre_push_enabled") == true
+    end
+
     def ai_api_key
       # Check credentials first, then config
       begin
@@ -96,11 +102,27 @@ module Zwischen
     end
 
     def scanner_enabled?(scanner)
-      @config.dig("scanners", scanner.to_s, "enabled") != false
+      scanner_config = @config.dig("scanners", scanner.to_s)
+      # Handle both formats: "gitleaks: true" (boolean) and "gitleaks: { enabled: true }" (hash)
+      case scanner_config
+      when true, false
+        scanner_config
+      when Hash
+        scanner_config["enabled"] != false
+      else
+        # Default to enabled if not specified
+        true
+      end
     end
 
     def semgrep_config
-      @config.dig("scanners", "semgrep", "config") || "auto"
+      semgrep_config = @config.dig("scanners", "semgrep")
+      # Handle both formats: "semgrep: true" (boolean) and "semgrep: { enabled: true, config: 'auto' }" (hash)
+      if semgrep_config.is_a?(Hash)
+        semgrep_config["config"] || "auto"
+      else
+        "auto"
+      end
     end
 
     def ignored_paths

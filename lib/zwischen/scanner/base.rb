@@ -16,10 +16,17 @@ module Zwischen
         system("which", @command, out: File::NULL, err: File::NULL)
       end
 
-      def scan(project_root = Dir.pwd)
+      def scan(project_root = Dir.pwd, files: nil)
         return [] unless available?
 
-        stdout, stderr, status = Open3.capture3(*build_command(project_root), chdir: project_root)
+        if files && !files.empty?
+          return scan_files(files, project_root) if respond_to?(:scan_files, true)
+          command = build_command_for_files(files, project_root)
+        else
+          command = build_command(project_root)
+        end
+
+        stdout, stderr, status = Open3.capture3(*command, chdir: project_root)
 
         if status.success?
           parse_output(stdout)
@@ -40,6 +47,10 @@ module Zwischen
 
       def build_command(_project_root)
         raise NotImplementedError, "Subclasses must implement build_command"
+      end
+
+      def build_command_for_files(_files, _project_root)
+        raise NotImplementedError, "Subclasses must implement build_command_for_files"
       end
 
       def read_file_snippet(file_path, line_number, context_lines = 3)

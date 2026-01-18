@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "thor"
+require "fileutils"
 require_relative "credentials"
 require_relative "hooks"
 require_relative "config"
@@ -20,34 +21,16 @@ module Zwischen
     end
 
     def run
-      @shell.say("\n🛡️  Zwischen Setup\n", :bold)
+      @shell.say("\n🛡️  Installing Zwischen security layer...\n", :bold)
 
-      # Check tools
       check_tools
+      configure_credentials
+      install_hook
+      create_config
 
-      # Prompt for AI config
-      ai_config = prompt_ai_config
-
-      # Save credentials if API key provided
-      if ai_config[:api_key]
-        Credentials.save(api_key: ai_config[:api_key])
-        @shell.say("  ✓ Credentials stored in ~/.zwischen/credentials - never committed", :green)
-      end
-
-      # Prompt for hook installation
-      hook_installed = prompt_hook_install
-
-      # Prompt for config creation
-      config_created = prompt_config_create
-
-      # Success message
-      @shell.say("\n✅ Done! Zwischen will scan automatically before each push.\n", :green)
-      @shell.say("\nTest it now:")
-      @shell.say("  git commit --allow-empty -m \"test zwischen\"")
-      @shell.say("  git push")
-      @shell.say("\nOr run manually:")
-      @shell.say("  zwischen scan")
-      @shell.say("\nRun 'zwischen uninstall' to remove the git hook.\n")
+      @shell.say("  ✓ Done!", :green)
+      @shell.say("\nZwischen will now scan automatically before pushes.")
+      @shell.say("Run 'zwischen scan' to test it now.\n")
     end
 
     def uninstall
@@ -96,7 +79,6 @@ module Zwischen
     private
 
     def check_tools
-      @shell.say("Checking for required tools...")
       installer = Installer.new
 
       tools = {
@@ -104,97 +86,81 @@ module Zwischen
         "semgrep" => "Static analysis"
       }
 
-      all_installed = true
+      missing = []
 
       tools.each do |tool_name, _description|
         installed = installer.check_tool(tool_name)
-        version = installer.get_version(tool_name) if installed
 
-        if installed
-          @shell.say("  ✓ #{tool_name} (v#{version || 'unknown'})", :green)
-        else
-          all_installed = false
-          @shell.say("  ✗ #{tool_name} - NOT FOUND", :red)
-          @shell.say("    → #{installer.preferred_command(tool_name)}", :yellow)
-        end
+        missing << tool_name unless installed
       end
 
-      @shell.say("") # Empty line
+      @shell.say("  ✓ Checking tools (gitleaks, semgrep)", :green)
+      return if missing.empty?
 
-      unless all_installed
-        @shell.say("⚠️  Some tools are missing. Install them using the commands above.", :yellow)
-        @shell.say("")
+      @shell.say("  ⚠️  Missing tools: #{missing.join(', ')}", :yellow)
+      missing.each do |tool_name|
+        @shell.say("    → #{installer.preferred_command(tool_name)}", :yellow)
       end
     end
 
-    def prompt_ai_config
-      enabled = @shell.yes?("Enable AI-powered analysis? (recommended)", default: true)
+    def configure_credentials
+      api_key = ENV["ANTHROPIC_API_KEY"]
+      return unless api_key && !api_key.strip.empty?
 
-      api_key = nil
-      if enabled
-        api_key = @shell.ask("Anthropic API key:") do |q|
-          q.echo = false # Mask input
-        end
-
-        if api_key.nil? || api_key.strip.empty?
-          @shell.say("  ⚠️  No API key provided. AI analysis will be disabled.", :yellow)
-          enabled = false
-        end
-      end
-
-      { enabled: enabled, api_key: api_key }
+      Credentials.save(api_key: api_key)
+      @shell.say("  ✓ Credentials stored in ~/.zwischen/credentials - never committed", :green)
     end
 
-    def prompt_hook_install
+    def install_hook
       project_root = Dir.pwd
       git_dir = File.join(project_root, ".git")
 
       unless File.directory?(git_dir)
-        @shell.say("⚠️  No .git directory found. Skipping hook installation.", :yellow)
+        @shell.say("  ⚠️  No .git directory found. Skipping hook installation.", :yellow)
         return false
       end
 
       hook_path = Hooks.hook_path(project_root)
 
-      if File.exist?(hook_path) && !Hooks.zwischen_hook?(hook_path)
-        action = Hooks.handle_existing_hook(hook_path, @shell)
-        return false if action == :skip
+      if File.exist?(hook_path)
+        if Hooks.zwischen_hook?(hook_path)
+          @shell.say("  ✓ Pre-push hook already installed", :green)
+          return true
+        end
+
+        backup_path = "#{hook_path}.zwischen.backup"
+        if File.exist?(backup_path)
+          timestamp = Time.now.strftime("%Y%m%d%H%M%S")
+          backup_path = "#{backup_path}.#{timestamp}"
+        end
+        FileUtils.cp(hook_path, backup_path)
+        @shell.say("  ✓ Backed up existing hook to #{backup_path}", :green)
       end
 
-      if @shell.yes?("Install git pre-push hook?", default: true)
-        if Hooks.install(project_root)
-          @shell.say("  ✓ Hook installed at .git/hooks/pre-push", :green)
-          return true
-        else
-          @shell.say("  ✗ Failed to install hook", :red)
-          return false
-        end
+      if Hooks.install(project_root)
+        @shell.say("  ✓ Installing pre-push hook", :green)
+        true
       else
-        @shell.say("  ↳ Skipping hook installation", :yellow)
-        return false
+        @shell.say("  ✗ Failed to install hook", :red)
+        false
       end
     end
 
-    def prompt_config_create
+    def create_config
       project_root = Dir.pwd
       config_path = File.join(project_root, Config::CONFIG_FILE)
 
       if File.exist?(config_path)
-        @shell.say("  ↳ Config file already exists at .zwischen.yml", :yellow)
+        @shell.say("  ✓ Config already exists (.zwischen.yml)", :green)
         return false
       end
 
-      if @shell.yes?("Create project config (.zwischen.yml)?", default: true)
-        if Config.init(project_root)
-          @shell.say("  ✓ Config created", :green)
-          return true
-        else
-          @shell.say("  ✗ Failed to create config", :red)
-          return false
-        end
+      if Config.init(project_root, quiet: true)
+        @shell.say("  ✓ Creating config (.zwischen.yml)", :green)
+        true
       else
-        @shell.say("  ↳ Skipping config creation", :yellow)
-        return false
+        @shell.say("  ✗ Failed to create config", :red)
+        false
       end
     end
   end

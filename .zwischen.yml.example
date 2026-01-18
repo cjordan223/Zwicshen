@@ -3,7 +3,8 @@
 
 # AI Provider Configuration
 ai:
-  enabled: true
+  enabled: true            # Enable AI for manual 'zwischen scan'
+  pre_push_enabled: false  # Disable AI in pre-push hooks (performance)
   provider: claude  # uses key from ~/.zwischen/credentials
   # api_key: null   # Leave null to use ~/.zwischen/credentials or ANTHROPIC_API_KEY env var
 
@@ -28,4 +29,5 @@ scanners:
 ignore:
   - vendor/
   - node_modules/
+  - test/fixtures/
   - "*.test.js"

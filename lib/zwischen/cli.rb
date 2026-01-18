@@ -3,12 +3,23 @@
 require "thor"
 require "json"
 require "colorize"
+require "pathname"
 
 module Zwischen
   class CLI < Thor
+    # Disable Thor's pager to prevent help from hanging
+    def self.exit_on_failure?
+      true
+    end
+
+    # Disable pager for help output
+    def help(command = nil, subcommand = false)
+      ENV["THOR_PAGER"] = "cat" if ENV["THOR_PAGER"].nil?
+      super
+    end
+
     desc "init", "Initialize Zwischen configuration"
     def init
-      require_relative "setup"
       Setup.run
     end
 
@@ -57,9 +68,6 @@ module Zwischen
     method_option :format, type: :string, default: "terminal", desc: "Output format (terminal, json)"
     method_option :"pre-push", type: :boolean, desc: "Pre-push mode (quiet, compact output)"
     def scan
-      require_relative "git_diff"
-      require_relative "credentials"
-      
       config = Config.load
       project = ProjectDetector.detect
       pre_push = options[:"pre-push"]
@@ -69,13 +77,24 @@ module Zwischen
         puts "🔍 Scanning #{project[:primary_type] || 'project'}...\n"
       end
 
+      changed_files = nil
+      if pre_push
+        changed_files = GitDiff.changed_files
+        changed_files = changed_files.select do |path|
+          candidate = path
+          candidate = File.join(project[:root], candidate) unless Pathname.new(candidate).absolute?
+          File.file?(candidate)
+        end
+
+        exit 0 if changed_files.empty?
+      end
+
       # Run scanners
       orchestrator = Scanner::Orchestrator.new(config: config)
-      findings = orchestrator.scan(project[:root], only: options[:only], pre_push: pre_push)
+      findings = orchestrator.scan(project[:root], only: options[:only], pre_push: pre_push, files: changed_files)
 
       # Filter findings to changed files in pre-push mode
       if pre_push
-        changed_files = GitDiff.changed_files
         findings = GitDiff.filter_findings(findings: findings, changed_files: changed_files)
       end
 
@@ -90,7 +109,7 @@ module Zwischen
       # AI analysis if enabled
       ai_enabled = if pre_push
         # In pre-push mode, use config to determine AI
-        config.ai_enabled? && Credentials.get_api_key
+        config.ai_pre_push_enabled? && Credentials.get_api_key
       else
         # Manual scan: use flag or config
         (!options[:ai].nil? && !options[:ai].empty?) || (config.ai_enabled? && Credentials.get_api_key)
@@ -138,6 +157,13 @@ module Zwischen
       exit 1
     end
 
+    desc "uninstall", "Remove Zwischen git hook and optionally config"
+    def uninstall
+      Setup.uninstall
+    end
+
+    default_task :scan
+
     private
 
     def should_block?(finding, blocking_severity, ai_enabled)
@@ -155,13 +181,5 @@ module Zwischen
         finding.critical? || finding.high?
       end
     end
-
-    desc "uninstall", "Remove Zwischen git hook and optionally config"
-    def uninstall
-      require_relative "setup"
-      Setup.uninstall
-    end
-
-    default_task :scan
   end
 end

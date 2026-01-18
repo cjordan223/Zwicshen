@@ -29,11 +29,14 @@ gem install bundler
 # Install dependencies
 bundle install
 
-# Build and install the gem locally
+# Build and install the gem locally (recommended for testing)
 gem build zwischen.gemspec
-gem install ./zwischen-*.gem
+gem install --user-install ./zwischen-*.gem
 
-# Or use bundler to run directly without installing
+# Or use the helper script:
+./scripts/test_as_gem.sh
+
+# Or use bundler to run directly without installing (development only)
 bundle exec bin/zwischen --help
 
 # Run tests
@@ -41,6 +44,11 @@ bundle exec rspec
 
 # Run a specific test file
 bundle exec rspec spec/zwischen/project_detector_spec.rb
+
+# Test as installed gem (see TESTING.md for full guide)
+# After installing, test in a separate directory:
+cd ~/your-test-project
+zwischen init
 ```
 
 **Note:** If `bundle` command is not found, add the gem bin directory to your PATH:

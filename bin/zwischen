@@ -1,8 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative "../lib/zwischen"
+require "zwischen"
 
-if __FILE__ == $PROGRAM_NAME
-  Zwischen::CLI.start(ARGV)
-end
+# Always start CLI when this file is loaded (works for both direct execution and gem wrapper)
+Zwischen::CLI.start(ARGV)

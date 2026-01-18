@@ -16,6 +16,10 @@ module Zwischen
         ["semgrep", "--json", "--config", @config, project_root]
       end
 
+      def build_command_for_files(files, _project_root)
+        ["semgrep", "--json", "--config", @config, *files]
+      end
+
       def parse_output(output)
         return [] if output.strip.empty?
 

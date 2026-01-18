@@ -11,7 +11,7 @@ module Zwischen
         @scanners = build_scanners
       end
 
-      def scan(project_root = Dir.pwd, only: nil, pre_push: false)
+      def scan(project_root = Dir.pwd, only: nil, pre_push: false, files: nil)
         enabled_scanners = select_scanners(only)
         available_scanners = enabled_scanners.select(&:available?)
 
@@ -23,7 +23,7 @@ module Zwischen
         # Run scanners in parallel using threads
         threads = available_scanners.map do |scanner|
           Thread.new do
-            [scanner.name, scanner.scan(project_root)]
+            [scanner.name, scanner.scan(project_root, files: files)]
           end
         end
 
@@ -34,7 +34,7 @@ module Zwischen
         end
 
         # Flatten all findings
-        # Note: In pre-push mode, we still scan entire repo, filtering happens in CLI layer
+        # Note: In pre-push mode, we pass file lists to scanners when available
         results.values.flatten
       end
 

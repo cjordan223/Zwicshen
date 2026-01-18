@@ -20,6 +20,26 @@ module Zwischen
         ]
       end
 
+      def scan_files(files, project_root)
+        findings = []
+        commands = build_command_for_files(files, project_root)
+
+        commands.each do |command|
+          stdout, stderr, status = Open3.capture3(*command, chdir: project_root)
+          if status.success?
+            next if stdout.strip.empty?
+            findings.concat(parse_output(stdout))
+          else
+            warn "Warning: #{@name} scan failed: #{stderr}" unless stderr.empty?
+          end
+        end
+
+        findings
+      rescue StandardError => e
+        warn "Error running #{@name}: #{e.message}"
+        []
+      end
+
       def parse_output(output)
         return [] if output.strip.empty?
 
@@ -48,6 +68,17 @@ module Zwischen
       end
 
       private
+
+      def build_command_for_files(files, project_root)
+        files.map do |file|
+          [
+            "gitleaks", "detect",
+            "--source", File.join(project_root, file),
+            "--format", "json",
+            "--no-git"
+          ]
+        end
+      end
 
       def map_severity(rule_id)
         # Gitleaks doesn't provide severity, so we map based on rule type

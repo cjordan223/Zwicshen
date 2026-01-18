@@ -28,11 +28,6 @@ module Zwischen
       # Ensure hooks directory exists
       FileUtils.mkdir_p(hooks_dir) unless File.directory?(hooks_dir)
 
-      # Handle existing hook
-      if File.exist?(path) && !zwischen_hook?(path)
-        return false # Signal that existing hook needs handling
-      end
-
       hook_content = <<~HOOK
         #!/usr/bin/env bash
         # #{HOOK_MARKER} - installed by 'zwischen init'
